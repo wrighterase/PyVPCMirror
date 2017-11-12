@@ -1,10 +1,9 @@
 #!/usr/bin/python
 import boto3
-#import sys
 import dynamodb
+
 ec2_client = boto3.client('ec2')
 ec2_resource = boto3.resource('ec2')
-
 vpc_select = []
 
 def vpc_info(x):
@@ -49,11 +48,13 @@ def enumerate_vpc(vpcid):
     #vpcid = source_vpc.id
     enumerate_rttbl(vpcid)
     enumerate_subnets(vpcid)
+    enumerate_secgroups(vpcid)
     
 def enumerate_rttbl(vpcid):
     associated_subnets = []
     table_name = str('rttbl-'+vpcid)
     dynamodb.dyndb_create(table_name)
+    dynamodb.initialize_table(table_name)
     print("Populating route table information")
     rttbl_filter = ec2_resource.route_tables.filter(Filters=[{'Name': 'vpc-id', 'Values': [vpcid]}])
     for i in rttbl_filter:
@@ -68,6 +69,7 @@ def enumerate_rttbl(vpcid):
 def enumerate_subnets(vpcid):
     table_name = str('subnet-'+vpcid)
     dynamodb.dyndb_create(table_name)
+    dynamodb.initialize_table(table_name)
     print("Populating subnet information")
     subnet_filter = ec2_resource.subnets.filter(Filters=[{'Name': 'vpc-id', 'Values': [vpcid]}])
     for i in subnet_filter:
@@ -75,6 +77,22 @@ def enumerate_subnets(vpcid):
             if x['Key'] == 'Name':
                 print('%s' ' %s ' ' %s ' ' %s ' '%s') % (i.id, x['Value'], i.cidr_block, i.availability_zone, i.vpc_id)
                 dynamodb.subnet_put(table_name, i.id, x['Value'], i.cidr_block, i.availability_zone, i.vpc_id)
+
+def enumerate_secgroups(vpcid):
+    table_name = str('secgroups-'+vpcid)
+    dynamodb.dyndb_create(table_name)
+    dynamodb.initialize_table(table_name)
+    print("Populating security group information")
+    secgroups = ec2_resource.security_groups.filter(
+                Filters=[{'Name': 'vpc-id', 'Values': [vpcid]}])
+    for i in secgroups:
+        print('%s\t' ' %s') % (i.id, i.group_name)
+        dynamodb.secgroup_put(table_name, i.id, i.group_name, i.description, 
+                              i.vpc_id, i.ip_permissions, i.ip_permissions_egress)
+
+def enumerate_ec2_instances():
+    pass
+
 
 if __name__ == '__main__':
     main()

@@ -1,38 +1,9 @@
 #!/usr/bin/python
 import boto3
-#import sys
 
 dyndb_client = boto3.client('dynamodb')
 dyndb_resource = boto3.resource('dynamodb')
 waiter = dyndb_client.get_waiter('table_exists')
-
-"""
-dyndb_tables = []
-
-def menu_select():
-    num=0
-    for i in dyndb_tables:
-        print(str(num) + ': ' + i)
-        num+=1
-    print('\n99: Exit')
-    
-    while True:
-        select = input('Choose an table: ')
-        if select == 99:
-            break
-        elif select not in range(len(dyndb_tables)):
-            print("\nInvalid option")
-        else:
-            print("\nUsing DynDB:\n" + dyndb_tables[select])
-            break
-            #enumerate_vpc(vpc_select[select])
-        
-def main():
-    print("Looking for existing DynamoDB tables:")
-    tables = dyndb_client.list_tables()
-    for i in tables['TableNames']: dyndb_tables.append(i)
-    menu_select()
-"""
 
 def dyndb_create(table_name):
     try:
@@ -49,50 +20,41 @@ def dyndb_create(table_name):
         print("Complete")
 
 def initialize_table(table_name):
+    global table
     table = dyndb_resource.Table(table_name)
-    
+    return table
+
 def rttbl_put(table_name, id, tag, subnets, vpc):
-    table = dyndb_resource.Table(table_name)
     table.put_item(
             TableName=table_name,
                Item={'id': id,
                     'tag': tag,
                     'subnets': subnets,
                     'vpc': vpc})
-    
-    """dyndb_client.put_item(
-            TableName=table_name,
-               Item={'id': {'S': id},
-                    'tag': {'S': tag},
-                    'subnets': {'L': [{'S': subnets},]},
-                    'vpc': {'S': vpc}
-                    })
-    """
+
 def subnet_put(table_name, id, tag, cidr_block, az, vpc):
-    table = dyndb_resource.Table(table_name)
     table.put_item(
             TableName=table_name,
             Item={'id': id,
                     'tag': tag,
                     'cidr': cidr_block,
                     'az': az,
-                    'vpc': vpc
-                    })
-            
-    """
-    dyndb_client.put_item(
+                    'vpc': vpc})
+
+def secgroup_put(table_name, id, name, desc, vpc, ingress, egress):
+    table.put_item(
             TableName=table_name,
-               Item={'id': {'S': id},
-                    'tag': {'S': tag},
-                    'cidr': {'S': cidr_block},
-                    'az': {'S': az},
-                    'vpc': {'S': vpc}
-                    })
-    """
+            Item={'id': id,
+                    'name': name,
+                    'description': desc,
+                    'vpc': vpc,
+                    'ingress': ingress,
+                    'egress': egress})
+
 def table_get_item(table_name, id, item):
-    item_value = dyndb_client.get_item(TableName=table_name,
-                  Key={'id': { 'S': id}})['Item'][item]['S']
+    item_value = table.get_item(TableName=table_name,
+                                Key={'id': id})['Item'][item]
     return item_value
 
-if __name__ == '__main__':
-    main()
+#if __name__ == '__main__':
+#    main()
