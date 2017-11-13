@@ -54,9 +54,9 @@ def menu_select():
         
 def enumerate_vpc(vpcid):
     enumerate_rttbl(vpcid)
-    #enumerate_subnets(vpcid)
-    #enumerate_secgroups(vpcid)
-    #enumerate_ec2_instances(vpcid)
+    enumerate_subnets(vpcid)
+    enumerate_secgroups(vpcid)
+    enumerate_ec2_instances(vpcid)
     
 def enumerate_rttbl(vpcid):
     associated_subnets = []
