@@ -1,9 +1,12 @@
 #!/usr/bin/python
 import boto3
 
-dyndb_client = boto3.client('dynamodb')
-dyndb_resource = boto3.resource('dynamodb')
-waiter = dyndb_client.get_waiter('table_exists')
+def __init__(awsprofile):
+    global dyndb_client, dyndb_resource, waiter
+    session = boto3.session.Session(profile_name=awsprofile)
+    dyndb_client = session.client('dynamodb')
+    dyndb_resource = session.resource('dynamodb')
+    waiter = dyndb_client.get_waiter('table_exists')
 
 def dyndb_create(table_name):
     try:
