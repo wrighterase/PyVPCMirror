@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import boto3
+import re
 import dynamodb
 
 ec2_client = boto3.client('ec2')
@@ -44,11 +45,10 @@ def menu_select():
             break
     
 def enumerate_vpc(vpcid):
-    #source_vpc = ec2_resource.Vpc(vpcid)
-    #vpcid = source_vpc.id
     enumerate_rttbl(vpcid)
     enumerate_subnets(vpcid)
     enumerate_secgroups(vpcid)
+    enumerate_ec2_instances(vpcid)
     
 def enumerate_rttbl(vpcid):
     associated_subnets = []
@@ -60,10 +60,10 @@ def enumerate_rttbl(vpcid):
     for i in rttbl_filter:
         rttbl_id = ec2_resource.RouteTable(i.id)
         for associated in rttbl_id.associations: associated_subnets.append(associated.subnet_id)
-        for x in i.tags:
-            if x['Key'] == 'Name':
-                print('%s' ' %s ' '%s') % (i.id, x['Value'], i.vpc_id)
-                dynamodb.rttbl_put(table_name, i.id, x['Value'], associated_subnets, i.vpc_id)
+        for tag in i.tags:
+            if tag['Key'] == 'Name':
+                print('%s' ' %s ' '%s') % (i.id, tag['Value'], i.vpc_id)
+                dynamodb.rttbl_put(table_name, i.id, tag['Value'], associated_subnets, i.vpc_id)
                 associated_subnets = []
 
 def enumerate_subnets(vpcid):
@@ -73,10 +73,11 @@ def enumerate_subnets(vpcid):
     print("Populating subnet information")
     subnet_filter = ec2_resource.subnets.filter(Filters=[{'Name': 'vpc-id', 'Values': [vpcid]}])
     for i in subnet_filter:
-        for x in i.tags:
-            if x['Key'] == 'Name':
-                print('%s' ' %s ' ' %s ' ' %s ' '%s') % (i.id, x['Value'], i.cidr_block, i.availability_zone, i.vpc_id)
-                dynamodb.subnet_put(table_name, i.id, x['Value'], i.cidr_block, i.availability_zone, i.vpc_id)
+        for tag in i.tags:
+            if tag['Key'] == 'Name':
+                keytag = tag['Value']
+        print('%s' ' %s ' ' %s ' ' %s ' '%s') % (i.id, keytag, i.cidr_block, i.availability_zone, i.vpc_id)
+        dynamodb.subnet_put(table_name, i.id, keytag, i.cidr_block, i.availability_zone, i.vpc_id)
 
 def enumerate_secgroups(vpcid):
     table_name = str('secgroups-'+vpcid)
@@ -90,9 +91,41 @@ def enumerate_secgroups(vpcid):
         dynamodb.secgroup_put(table_name, i.id, i.group_name, i.description, 
                               i.vpc_id, i.ip_permissions, i.ip_permissions_egress)
 
-def enumerate_ec2_instances():
-    pass
+def enumerate_ec2_instances(vpcid):
+    associated_volumes = []
+    secondary_ipv4 = []
+    table_name = str('instances-'+vpcid)
+    dynamodb.dyndb_create(table_name)
+    dynamodb.initialize_table(table_name)
+    print("Populating EC2 instance information")
+    instances = ec2_resource.instances.filter(
+                Filters=[{'Name': 'vpc-id', 'Values': [vpcid]}])
+    for i in instances:
+        try:
+            iam_arn = i.iam_instance_profile['Arn']
+            iam_arn = re.sub('arn.*profile/', '', iam_arn)
+        except:
+            iam_arn = 'None'
+        volumes = i.volumes.all()
+        eni = i.network_interfaces
+        for v in volumes:
+            associated_volumes.append(v.id)
+        for tag in i.tags:
+            if tag['Key'] == 'Name':
+                keytag = tag['Value']
+        for n in eni:
+            for ip in n.private_ip_addresses:
+                if ip['Primary'] == False:
+                    secondary_ipv4.append(ip['PrivateIpAddress'])
+                if ip['Primary'] == True:
+                    primary_ipv4 = ip['PrivateIpAddress']
+        print('%s' ' %s ' '%s') % (i.id, keytag, i.vpc_id)
+        dynamodb.instances_put(table_name, i.id, keytag, i.vpc_id, i.image_id, i.security_groups,
+                               i.instance_type, i.placement['AvailabilityZone'], i.subnet_id,
+                               i.key_name, iam_arn, primary_ipv4, secondary_ipv4, associated_volumes)
+        associated_volumes = []
+        secondary_ipv4 = []
 
-
+        
 if __name__ == '__main__':
     main()

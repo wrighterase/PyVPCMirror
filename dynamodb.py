@@ -50,7 +50,26 @@ def secgroup_put(table_name, id, name, desc, vpc, ingress, egress):
                     'vpc': vpc,
                     'ingress': ingress,
                     'egress': egress})
-
+    
+def instances_put(table_name, id, tag, vpc, ami, secgroups,
+                  itype, az, subnet, keypair, iam, priipv4, 
+                  secipv4=None, vols=None):
+    table.put_item(
+            TableName=table_name,
+            Item={'id': id,
+                    'tag': tag,
+                    'vpc': vpc,
+                    'ami': ami,
+                    'securitygroups': secgroups,
+                    'iam-profile': iam,
+                    'instance-type': itype,
+                    'az': az,
+                    'subnet': subnet,
+                    'keypair': keypair,
+                    'primaryIpv4': priipv4,
+                    'secondaryIpv4': secipv4,
+                    'additionalEBS': vols})
+                   
 def table_get_item(table_name, id, item):
     item_value = table.get_item(TableName=table_name,
                                 Key={'id': id})['Item'][item]
