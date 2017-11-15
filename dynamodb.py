@@ -3,7 +3,7 @@ import boto3
 
 def __init__(awsprofile):
     global dyndb_client, dyndb_resource, waiter
-    session = boto3.session.Session(profile_name=awsprofile)
+    session = boto3.session.Session(profile_name=awsprofile, region_name='us-west-2')
     dyndb_client = session.client('dynamodb')
     dyndb_resource = session.resource('dynamodb')
     waiter = dyndb_client.get_waiter('table_exists')

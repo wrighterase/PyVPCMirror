@@ -7,7 +7,7 @@ vpc_select = []
 
 def __init__(awsprofile):
     global ec2_client, ec2_resource
-    session = boto3.session.Session(profile_name=awsprofile)
+    session = boto3.session.Session(profile_name=awsprofile, region_name='us-west-2')
     ec2_client = session.client('ec2')
     ec2_resource = session.resource('ec2')
 
@@ -31,6 +31,7 @@ def main():
     menu_select()
     
 def menu_select():
+    print("Gather existing a list of VPCs\n")
     num=0
     for i in vpc_select:
         try:
@@ -117,6 +118,10 @@ def enumerate_ec2_instances(vpcid):
             iam_arn = re.sub('arn.*profile/', '', iam_arn)
         except:
             iam_arn = 'None'
+        try:
+            keypair = i.key_name
+        except:
+            keypair = 'None'
         volumes = i.volumes.all()
         eni = i.network_interfaces
         for v in volumes:
@@ -124,19 +129,21 @@ def enumerate_ec2_instances(vpcid):
         for tag in i.tags:
             if tag['Key'] == 'Name':
                 keytag = tag['Value']
+                if keytag == '':
+                    keytag = 'Null'
         for n in eni:
             for ip in n.private_ip_addresses:
                 if ip['Primary'] == False:
                     secondary_ipv4.append(ip['PrivateIpAddress'])
                 if ip['Primary'] == True:
                     primary_ipv4 = ip['PrivateIpAddress']
-        print('%s' ' %s ' '%s') % (i.id, keytag, i.vpc_id)
+        print('%s' ' %s ' ' %s ' '%s') % (i.id, keytag, keypair, i.vpc_id)
         dynamodb.instances_put(table_name, i.id, keytag, i.vpc_id, i.image_id, i.security_groups,
                                i.instance_type, i.placement['AvailabilityZone'], i.subnet_id,
-                               i.key_name, iam_arn, primary_ipv4, secondary_ipv4, associated_volumes)
+                               keypair, iam_arn, primary_ipv4, secondary_ipv4, associated_volumes)
         associated_volumes = []
         secondary_ipv4 = []
 
         
-if __name__ == '__main__':
-    main()
+#if __name__ == '__main__':
+#    main()
