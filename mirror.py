@@ -2,9 +2,20 @@
 import os
 import vpc_enum
 import dynamodb
+import subprocess
 #import sys
 
+banner = """
+   ___              ___  ___       _                     
+  / _ \_   _/\   /\/ _ \/ __\/\/\ (_)_ __ _ __ ___  _ __ 
+ / /_)/ | | \ \ / / /_)/ /  /    \| | '__| '__/ _ \| '__|
+/ ___/| |_| |\ V / ___/ /__/ /\/\ \ | |  | | | (_) | |   
+\/     \__, | \_/\/   \____|/    \/_|_|  |_|  \___/|_|   
+       |___/                                             
+"""
+
 def __init__():
+    print(banner)
     profile_list = []
     awscreds = os.path.expanduser('~/.aws/credentials')
     if os.path.exists(awscreds):
@@ -16,7 +27,10 @@ def __init__():
                 profile_list.append(profile.strip('[]'))
         profile_select(profile_list)
     else:
-        print("No credentials were found.  Execuing 'awsconfig'")
+        print("No credentials were found.  Executing 'awsconfig'")
+        print("Please provide your AWS profile credentials\n")
+        AWSCONFIG = "aws configure"
+        subprocess.call(AWSCONFIG, shell=True)
          
 def profile_select(profile_list):
     print("Looking AWS credential profiles...\n")
