@@ -13,7 +13,8 @@ def __init__(awsprofile):
     ec2_client = session.client('ec2')
     ec2_resource = session.resource('ec2')
 
-#Grabs the vpc ID based on its tag name
+#Method to enumerate information about a VPC based on its ID
+#Not needed at the moment and may be purged altogether
 def vpc_info(x):
     vpc = ec2_resource.Vpc(x)
     x = (vpc.id)
@@ -31,7 +32,7 @@ def main():
     ])
     
     for i in list_of_vpcs['Vpcs']:
-        vpc_select.append(vpc_info(i['VpcId']))
+        vpc_select.append(i['VpcId'])
     menu_select()
 
 #Dynamically create a menu selection based on the data we've collected so far
