@@ -5,17 +5,21 @@ import dynamodb
 
 vpc_select = []
 
+#Initialize the session based on the aws profile we're using.  We'll only do this once
+#to-do:  figure out a solution for the region so its not hard coded
 def __init__(awsprofile):
     global ec2_client, ec2_resource
     session = boto3.session.Session(profile_name=awsprofile, region_name='us-west-2')
     ec2_client = session.client('ec2')
     ec2_resource = session.resource('ec2')
 
+#Grabs the vpc ID based on its tag name
 def vpc_info(x):
     vpc = ec2_resource.Vpc(x)
     x = (vpc.id)
     return x
-   
+
+#Grab all VPCs in the account that are available and resolve its VPC ID
 def main():
     list_of_vpcs = ec2_client.describe_vpcs(Filters=[
         {
@@ -29,7 +33,8 @@ def main():
     for i in list_of_vpcs['Vpcs']:
         vpc_select.append(vpc_info(i['VpcId']))
     menu_select()
-    
+
+#Dynamically create a menu selection based on the data we've collected so far
 def menu_select():
     print("Gather existing a list of VPCs\n")
     num=0
@@ -52,7 +57,8 @@ def menu_select():
             print("\nEnumerating on VPC:\n" + vpc_select[select])
             enumerate_vpc(vpc_select[select])
             break
-        
+
+#Start data collection for mirroring process in this order...
 def enumerate_vpc(vpcid):
     enumerate_rttbl(vpcid)
     enumerate_subnets(vpcid)

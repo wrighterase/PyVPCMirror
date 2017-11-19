@@ -14,6 +14,8 @@ banner = """
        |___/                                             
 """
 
+#Look for existing aws crednetials and populate environment profiles to choose from
+#If no credentials found execute 'aws config' for the user to get them configured
 def __init__():
     print(banner)
     profile_list = []
@@ -31,7 +33,8 @@ def __init__():
         print("Please provide your AWS profile credentials\n")
         AWSCONFIG = "aws configure"
         subprocess.call(AWSCONFIG, shell=True)
-         
+
+#List environment profiles to verify we're working with the correct account         
 def profile_select(profile_list):
     print("Looking AWS credential profiles...\n")
     num=0
@@ -52,6 +55,7 @@ def profile_select(profile_list):
             main(awsprofile)
             break
 
+#Initialize dependent scripts and start the mirroring process
 def main(awsprofile):
     vpc_enum.__init__(awsprofile)
     dynamodb.__init__(awsprofile)
