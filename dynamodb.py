@@ -3,9 +3,9 @@ import boto3
 
 #Initialize the session based on the aws profile we're using.  We'll only do this once
 #to-do:  figure out a solution for the region so its not hard coded
-def __init__(awsprofile):
+def __init__(awsprofile, region):
     global dyndb_client, dyndb_resource, waiter
-    session = boto3.session.Session(profile_name=awsprofile, region_name='us-west-2')
+    session = boto3.session.Session(profile_name=awsprofile, region_name=region)
     dyndb_client = session.client('dynamodb')
     dyndb_resource = session.resource('dynamodb')
     waiter = dyndb_client.get_waiter('table_exists')
@@ -82,6 +82,15 @@ def instances_put(table_name, id, tag, vpc, ami, secgroups,
                     'primaryIpv4': priipv4,
                     'secondaryIpv4': secipv4,
                     'additionalEBS': vols})
+
+def volume_put(table_name, id, az, dev, snap, tag):
+    table.put_item(
+        TableName=table_name,
+        Item={'id': id,
+                'az': az,
+                'dev': dev,
+                'snap': snap,
+                'tag': tag})
 
 #Method to get an item from a dyntb table.  Not needed yet, but will be once we start using the data we've collected
 def table_get_item(table_name, id, item):

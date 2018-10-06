@@ -2,14 +2,15 @@
 import boto3
 import re
 import dynamodb
+import metadata
 
 vpc_select = []
 
 #Initialize the session based on the aws profile we're using.  We'll only do this once
 #to-do:  figure out a solution for the region so its not hard coded
-def __init__(awsprofile):
+def __init__(awsprofile, region):
     global ec2_client, ec2_resource
-    session = boto3.session.Session(profile_name=awsprofile, region_name='us-west-2')
+    session = boto3.session.Session(profile_name=awsprofile, region_name=region)
     ec2_client = session.client('ec2')
     ec2_resource = session.resource('ec2')
 
@@ -49,23 +50,32 @@ def menu_select():
     print('\n99: Exit')
     
     while True:
-        select = input('Choose a VPC: ')
+        select = int(input('Choose a VPC: '))
         if select == 99:
             break
         elif select not in range(len(vpc_select)):
             print("\nInvalid option")
         else:
-            print("\nEnumerating on VPC:\n" + vpc_select[select])
+            print("\nEnumerating on VPC: " + vpc_select[select])
             enumerate_vpc(vpc_select[select])
             break
 
 #Start data collection for mirroring process in this order...
 def enumerate_vpc(vpcid):
-    enumerate_rttbl(vpcid)
-    enumerate_subnets(vpcid)
-    enumerate_secgroups(vpcid)
-    enumerate_ec2_instances(vpcid)
-    
+    #enumerate_rttbl(vpcid)
+    #enumerate_subnets(vpcid)
+    #enumerate_secgroups(vpcid)
+    #enumerate_ec2_instances(vpcid)
+    metadata.enumerate_volumes(vpcid)
+
+#unused
+def enumerate_vpc_details(vpcid):
+    table_name = str('vpc-'+vpcid)
+    dynamodb.dyndb_create(table_name)
+    dynamodb.initialize_table(table_name)
+    print("Populating VPC detail information")
+
+
 def enumerate_rttbl(vpcid):
     associated_subnets = []
     table_name = str('rttbl-'+vpcid)
@@ -81,7 +91,7 @@ def enumerate_rttbl(vpcid):
                 keytag = tag['Value']
                 if keytag == '':
                     keytag = 'Null'
-                print('%s' ' %s ' '%s') % (i.id, keytag, i.vpc_id)
+                print("%s" ' %s ' "%s" % (i.id, keytag, i.vpc_id))
                 dynamodb.rttbl_put(table_name, i.id, keytag, associated_subnets, i.vpc_id)
                 associated_subnets = []
 
@@ -95,7 +105,7 @@ def enumerate_subnets(vpcid):
         for tag in i.tags:
             if tag['Key'] == 'Name':
                 keytag = tag['Value']
-        print('%s' ' %s ' ' %s ' ' %s ' '%s') % (i.id, keytag, i.cidr_block, i.availability_zone, i.vpc_id)
+        print("%s" ' %s ' ' %s ' ' %s ' "%s" % (i.id, keytag, i.cidr_block, i.availability_zone, i.vpc_id))
         dynamodb.subnet_put(table_name, i.id, keytag, i.cidr_block, i.availability_zone, i.vpc_id)
 
 def enumerate_secgroups(vpcid):
@@ -106,7 +116,7 @@ def enumerate_secgroups(vpcid):
     secgroups = ec2_resource.security_groups.filter(
                 Filters=[{'Name': 'vpc-id', 'Values': [vpcid]}])
     for i in secgroups:
-        print('%s\t' ' %s') % (i.id, i.group_name)
+        print('%s\t' ' %s' % (i.id, i.group_name))
         dynamodb.secgroup_put(table_name, i.id, i.group_name, i.description, 
                               i.vpc_id, i.ip_permissions, i.ip_permissions_egress)
 
@@ -144,7 +154,7 @@ def enumerate_ec2_instances(vpcid):
                     secondary_ipv4.append(ip['PrivateIpAddress'])
                 if ip['Primary'] == True:
                     primary_ipv4 = ip['PrivateIpAddress']
-        print('%s' ' %s ' ' %s ' '%s') % (i.id, keytag, keypair, i.vpc_id)
+        print("%s" ' %s ' ' %s ' "%s" % (i.id, keytag, keypair, i.vpc_id))
         dynamodb.instances_put(table_name, i.id, keytag, i.vpc_id, i.image_id, i.security_groups,
                                i.instance_type, i.placement['AvailabilityZone'], i.subnet_id,
                                keypair, iam_arn, primary_ipv4, secondary_ipv4, associated_volumes)
