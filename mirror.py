@@ -68,6 +68,7 @@ def profile_select(profile_list):
 #After a named profile has been selected we need to extract the region to ensure we have a good session
 #if using a profile other than default and a region has not been set this method will throw errors
 def region_select(awsprofile):
+    print("Looking for region associated with %s" % (awsprofile))
     region_list = []
     awsconfig = os.path.expanduser('~/.aws/config')
     try:
@@ -76,9 +77,9 @@ def region_select(awsprofile):
                 content = f.readlines()
                 content = [x.strip() for x in content]
             for region in content:
-                region = re.sub('region\ =\ ', '',region)
+                region = re.sub('region\ =\ ', '',region) #remove 'region = ' from list
                 region_list.append(region.strip('[]'))
-            region = dict(itertools.izip_longest(*[iter(region_list)] * 2, fillvalue=""))
+            region = dict(itertools.izip_longest(*[iter(region_list)] * 2, fillvalue="")) #convert the list to a dictionary - izip for python2 / zip for python3
             selected_region = region[awsprofile]
     except Exception as e:
         print("Profile " + str(e) + " was not found!")
@@ -86,6 +87,7 @@ def region_select(awsprofile):
         print("PyVPCMirror assumes that named profiles have the required region associated")
         quit()
 
+    print("Configured region: %s" % (selected_region))
     main(awsprofile,selected_region)
 
 #Initialize dependent scripts and start the mirroring process

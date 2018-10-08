@@ -17,14 +17,14 @@ def dyndb_create(table_name):
         table_exists = dyndb_client.describe_table(TableName=table_name)['Table']['TableStatus']
         print("\nDatabase for " + table_name + " already exists!")
     except:
-        print("\nCreating database..."),
+        print("\nCreating database...")
         dyndb_client.create_table(
                 AttributeDefinitions=[{'AttributeName': 'id', 'AttributeType': 'S'},],
                 TableName=table_name,
                 KeySchema=[{'AttributeName': 'id', 'KeyType': 'HASH'},],
-                ProvisionedThroughput={'ReadCapacityUnits': 5,'WriteCapacityUnits': 5})
+                ProvisionedThroughput={'ReadCapacityUnits': 1,'WriteCapacityUnits': 1})
         waiter.wait(TableName=table_name)
-        print("Complete")
+        print("Complete") #this should be printing to the previous line, but the DB creation is breaking the print until its actually completed.
 
 #Set the table to work with based on what part of the mirror process we're in.
 #This is required to increase runtime speed and reduce the number of calls to aws.
@@ -37,6 +37,14 @@ def initialize_table(table_name):
     return table
 
 #Database put methods.  Self explanatory.
+def vpc_put(table_name, id, tag, cidr, dhcp):
+    table.put_item(
+            TableName=table_name,
+                Item={'id': id,
+                      'tag': tag,
+                      'cidr': cidr,
+                      'dhcp': dhcp})
+    
 def rttbl_put(table_name, id, tag, subnets, vpc):
     table.put_item(
             TableName=table_name,

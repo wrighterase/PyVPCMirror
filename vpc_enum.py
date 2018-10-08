@@ -38,7 +38,7 @@ def main():
 
 #Dynamically create a menu selection based on the data we've collected so far
 def menu_select():
-    print("Gather existing a list of VPCs\n")
+    print("Gathering list of existing VPCs\n")
     num=0
     for i in vpc_select:
         try:
@@ -62,11 +62,12 @@ def menu_select():
 
 #Start data collection for mirroring process in this order...
 def enumerate_vpc(vpcid):
+    enumerate_vpc_details(vpcid)
     #enumerate_rttbl(vpcid)
     #enumerate_subnets(vpcid)
     #enumerate_secgroups(vpcid)
     #enumerate_ec2_instances(vpcid)
-    metadata.enumerate_volumes(vpcid)
+    #metadata.enumerate_volumes(vpcid)
 
 #unused
 def enumerate_vpc_details(vpcid):
@@ -74,6 +75,16 @@ def enumerate_vpc_details(vpcid):
     dynamodb.dyndb_create(table_name)
     dynamodb.initialize_table(table_name)
     print("Populating VPC detail information")
+    vpc_info = ec2_client.describe_vpcs(VpcIds=[vpcid])
+    vpc_info = vpc_info['Vpcs']
+    for tag in vpc_info[0]['Tags']:
+            if tag['Key'] == 'Name':
+                keytag = tag['Value']
+                if keytag == '':
+                    keytag = 'Null'
+    dhcp = ec2_client.describe_dhcp_options(DhcpOptionsIds=[vpc_info[0]['DhcpOptionsId']])
+    dhcp = dhcp['DhcpOptions']
+    dynamodb.vpc_put(table_name, vpc_info[0]['VpcId'], keytag, vpc_info[0]['CidrBlock'], dhcp)
 
 
 def enumerate_rttbl(vpcid):
